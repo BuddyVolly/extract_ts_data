@@ -39,7 +39,7 @@ def get_time_series(imageCollection, points, geometry, config_dict):
         ).map(pixel_value_nan)
 
     # apply mapping ufnciton over landsat collection and get the url of the returned FC
-    cell_fc = masked_coll.map(mapOverImgColl).flatten().filter(ee.Filter.neq(band, -9999));
+    cell_fc = masked_coll.map(mapOverImgColl).flatten().filter(ee.Filter.neq('pixel_value', -9999));
     url = cell_fc.getDownloadUrl('geojson')
 
     # Handle downloading the actual pixels.
