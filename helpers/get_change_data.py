@@ -122,7 +122,7 @@ def get_change_data(aoi, fc, config_dict):
     df = pd.DataFrame(columns=gdf.columns)
     for file in outdir.glob('*tmp*results.pickle'):
         df2 = gpd.read_pickle(file)
-        file.unlink()
+        #file.unlink()
         df = pd.concat([df, df2], ignore_index=True)
     
     # write to pickle with all ts and dates
