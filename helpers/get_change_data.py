@@ -41,7 +41,7 @@ def get_change_data(aoi, fc, config_dict):
             config_dict = json.load(f)
             
         # check if already been calculated
-        if outdir.joinpath(f'tmp_{idx}_results.gpkg').exists():
+        if outdir.joinpath(f'tmp_{idx}_results.pickle').exists():
             print(f' Grid cell {idx} already has been extracted. Going on with next grid cell.')    
             return
         
