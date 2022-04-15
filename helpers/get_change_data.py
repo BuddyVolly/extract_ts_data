@@ -59,7 +59,14 @@ def get_change_data(aoi, fc, config_dict):
                     df, 
                     on='point_id'
                 )
+            
+            # if gfc:
+                # df = h.extract_gfc_change(df)
 
+            # if tmf:
+              # df = h.extract_tmf_change(df)
+                
+                
             if config_dict['bfast_params']['run']:
                 df = run_bfast_monitor(df, config_dict['bfast_params'])
 
@@ -79,19 +86,7 @@ def get_change_data(aoi, fc, config_dict):
             if config_dict['bs_slope_params']['run']:
                 df = run_bs_slope(df, config_dict['bs_slope_params'])
 
-            # if gfc:
-                # df = h.extract_gfc_change(df)
-
-            # if tmf:
-              # df = h.extract_tmf_change(df)
-
-            gpd.GeoDataFrame(
-                df.drop(['dates', 'ts'], axis=1), 
-                crs="EPSG:4326", 
-                geometry=df['geometry']
-            ).to_file(
-                outdir.joinpath(f'tmp_{idx}_results.geojson'), driver='GeoJSON'
-            )
+            df.to_pickle(outdir.joinpath(f'tmp_{idx}_results.pickle'))
 
             # stop timer and print runtime
             elapsed = time.time() - start_time
@@ -122,18 +117,22 @@ def get_change_data(aoi, fc, config_dict):
         except ValueError:
             print("task failed")
     
-    files = list(outdir.glob('*tmp*results.geojson'))
-    gdf = gpd.read_file(files[0])
+    files = list(outdir.glob('*tmp*results.pickle'))
+    gdf = pd.read_pickle(files[0])
     df = pd.DataFrame(columns=gdf.columns)
-    for file in outdir.glob('*tmp*results.geojson'):
-        df2 = gpd.read_file(file)
+    for file in outdir.glob('*tmp*results.pickle'):
+        df2 = gpd.read_pickle(file)
         file.unlink()
         df = pd.concat([df, df2], ignore_index=True)
-        
+    
+    # write to pickle with all ts and dates
+    df.to_pickle(outdir.joinpath(f'final_results.pickle'))
+    
+    # write to geo file
     gpd.GeoDataFrame(
-                df, 
+                df.drop(['dates', 'ts']), 
                 crs="EPSG:4326", 
                 geometry=df['geometry']
             ).to_file(
-                outdir.joinpath(f'final_results.geojson'), driver='GeoJSON'
+                outdir.joinpath(f'final_results.gpkg'), driver='GPKG'
             )
