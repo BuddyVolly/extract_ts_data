@@ -67,7 +67,7 @@ def get_change_data(aoi, fc, config_dict):
 
             # we cut ts data to monitoring period only
             df[['dates', 'ts', 'mon_images']] = df.apply(
-                lambda row: subset_ts(row, start_monitor), axis=1, result_type='expand'
+                lambda row: subset_ts(row, config_dict['ts_params']['start_monitor']), axis=1, result_type='expand'
             )
 
             if config_dict['cusum_params']['run']:
@@ -92,7 +92,7 @@ def get_change_data(aoi, fc, config_dict):
             ).to_file(
                 outdir.joinpath(f'tmp_{idx}_results.geojson'), driver='GeoJSON'
             )
-    #return df
+
             # stop timer and print runtime
             elapsed = time.time() - start_time
         
@@ -121,12 +121,6 @@ def get_change_data(aoi, fc, config_dict):
             task.result()
         except ValueError:
             print("task failed")
-    
-    # get the time-series adn calculate cusum
-    #pool = multiprocessing.Pool(config_dict["workers"])
-    #pool.starmap(cell_computation, )
-    #pool.close()
-    #pool.join()
     
     files = list(outdir.glob('*tmp*results.geojson'))
     gdf = gpd.read_file(files[0])
