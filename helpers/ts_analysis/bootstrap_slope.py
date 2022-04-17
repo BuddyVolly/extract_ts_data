@@ -13,26 +13,29 @@ def bootstrap_slope(args):
     
     # unpack args and transform data and dates into numpy arrays
     y, x, nr_bootstraps, point_id = args
-    x, y = np.array(x), np.array(y)
-    
-    boot_means = []
-    for _ in range(nr_bootstraps):
-        
-        # the fraction of sample we want to include (randon)
-        #size = np.abs(np.random.normal(0.5, 0.1))
-        size = .66
-        # select the random samples
-        rand_idx = sorted(np.random.choice(np.arange(y.size), int(y.size * size), replace=False))
-        
-        # calculate the slope on the randomly selected samples
-        s = slope(x[rand_idx], y[rand_idx])
-        
-        # add to list of bootstrap samples
-        boot_means.append(s)
+    if x:
+        x, y = np.array(x), np.array(y)
 
-    # calculate stats adn return
-    boot_means_np = np.array(boot_means)
-    return np.mean(boot_means_np), np.std(boot_means_np), np.max(boot_means_np), np.min(boot_means_np), point_id
+        boot_means = []
+        for _ in range(nr_bootstraps):
+
+            # the fraction of sample we want to include (randon)
+            #size = np.abs(np.random.normal(0.5, 0.1))
+            size = .66
+            # select the random samples
+            rand_idx = sorted(np.random.choice(np.arange(y.size), int(y.size * size), replace=False))
+
+            # calculate the slope on the randomly selected samples
+            s = slope(x[rand_idx], y[rand_idx])
+
+            # add to list of bootstrap samples
+            boot_means.append(s)
+
+        # calculate stats adn return
+        boot_means_np = np.array(boot_means)
+        return np.mean(boot_means_np), np.std(boot_means_np), np.max(boot_means_np), np.min(boot_means_np), point_id
+    else:
+        return 0, 0, 0, 0, point_id
 
 
 def run_bs_slope(df, bs_slope_params):
@@ -54,7 +57,7 @@ def run_bs_slope(df, bs_slope_params):
         try:
             d[i] = list(task.result())
         except ValueError:
-            print("task failed")
+            print("bootstrap task failed")
             
     slope_df = pd.DataFrame.from_dict(d, orient='index')
     slope_df.columns = ['bs_slope_mean', 'bs_slope_sd', 'bs_slope_min', 'bs_slope_max', 'point_id']

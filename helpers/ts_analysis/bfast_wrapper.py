@@ -45,28 +45,44 @@ def bfast_monitor(args):
     
     # unpack args
     data, dates, point_id, bfast_params = args
-        
+    
     # initialize model
     params = bfast_params.copy()
     params.update(start_monitor=dt.strptime(bfast_params['start_monitor'], '%Y-%m-%d'))
     del params['run']
     model = BFASTMonitor(**params)
     
-    # fit gistorical period
-    model.fit(data, dates)
-    
-    # get monitoring dates
+    # check if we have dates in the monitoring period
     start_monitor = dt.strptime(bfast_params['start_monitor'], '%Y-%m-%d')
     mon_dates = [date for date in dates if date > start_monitor]
+    if mon_dates: 
+        # fit gistorical period
+        model.fit(data, dates)
+        
+        # get breaks in the monitoring period
+        if model.breaks < 0:
+            # in case not enough images or no breaks
+            bfast_date = model.breaks
+            # get magnitude and means
+            bfast_magnitude = 0
+            bfast_means = 0
+        else:
+            # get index of break
+            bfast_date = mon_dates[model.breaks-1]
+            # transform dates to fractional years
+            bfast_date = bfast_date.year + np.round(bfast_date.dayofyear/365, 3)
+
+            # get magnitude and means
+            bfast_magnitude = model.magnitudes
+            bfast_means = model.means
+    else:
+        # no image in historical period
+        bfast_date = -2
+        # get magnitude and means
+        bfast_magnitude = 0
+        bfast_means = 0
     
-    # get breaks in the monitoring period
-    bfast_date = mon_dates[model.breaks]
-    # transform dates to fractional years
-    bfast_date = bfast_date.year + np.round(bfast_date.dayofyear/365, 3)
     
-    # get magnitude and means
-    bfast_magnitude = model.magnitudes
-    bfast_means = model.means
     
     return bfast_date, bfast_magnitude, bfast_means, point_id
 
@@ -87,7 +103,7 @@ def run_bfast_monitor(df, bfast_params):
         try:
             d[i] = list(task.result())
         except ValueError:
-            print("task failed")
+            print("bfast task failed")
             
     bfast_df = pd.DataFrame.from_dict(d, orient='index')
     bfast_df.columns = ['bfast_change_date', 'bfast_magnitude', 'bfast_means', 'point_id']

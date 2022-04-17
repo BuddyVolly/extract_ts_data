@@ -41,17 +41,19 @@ def get_change_data(aoi, fc, config_dict):
             config_dict = json.load(f)
             
         # check if already been calculated
-        if outdir.joinpath(f'tmp_{idx}_results.pickle').exists():
+        if outdir.joinpath(f'tmp_{idx}_results.pickle').exists() or outdir.joinpath(f'tmp_{idx}_noresult.txt').exists():
             print(f' Grid cell {idx} already has been extracted. Going on with next grid cell.')    
             return
         
         # get start time
         start_time = time.time()
         
+        
         # get the timeseries data
         df, nr_of_points = get_time_series(lsat, fc, cell, config_dict)
         
         if nr_of_points > 0:
+            print(f' Processing gridcell {idx}')
             if config_dict['ccdc_params']['run']:
                 ccdc_df = extract_ccdc(lsat, fc, cell, config_dict)
                 df = pd.merge(
@@ -94,12 +96,14 @@ def get_change_data(aoi, fc, config_dict):
         if nr_of_points > 0:
             print(f' Grid cell {idx} with {nr_of_points} points done in: {timedelta(seconds=elapsed)}')    
         else:
+            with open(outdir.joinpath(f'tmp_{idx}_noresult.txt'), 'w') as f:
+                f.write('0 points')
             print(f' Grid cell {idx} does not contain any points. Going on with next grid cell.')    
         
                        
     # create a grid
     grid, grid_fc = generate_grid(aoi, config_dict['ts_params']['grid_size'], config_dict['ts_params']['grid_size'])
-    print(f' Parallelizing with {str(config_dict["workers"])} on {len(grid)} grid cells.')
+    print(f' Parallelizing time-series extraction on {str(config_dict["workers"])} threads for a total of {len(grid)} grid cells.')
     
     args_list = [(*l, config_file) for l in list(enumerate(grid))]
     
@@ -115,13 +119,13 @@ def get_change_data(aoi, fc, config_dict):
         try:
             task.result()
         except ValueError:
-            print("task failed")
+            print("gridcell task failed")
     
-    files = list(outdir.glob('*tmp*results.pickle'))
+    files = list(outdir.glob('tmp*results.pickle'))
     gdf = pd.read_pickle(files[0])
     df = pd.DataFrame(columns=gdf.columns)
-    for file in outdir.glob('*tmp*results.pickle'):
-        df2 = gpd.read_pickle(file)
+    for file in outdir.glob('tmp*results.pickle'):
+        df2 = pd.read_pickle(file)
         #file.unlink()
         df = pd.concat([df, df2], ignore_index=True)
     

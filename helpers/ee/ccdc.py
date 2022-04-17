@@ -53,7 +53,6 @@ def extract_ccdc(lsat, points_fc, cell, config_dict):
     points = points_fc.filterBounds(cell)
     nr_points = points.size().getInfo()
     if nr_points == 0:
-        print('here')
         return
     
     # create image collection (not being changed)

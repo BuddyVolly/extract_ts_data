@@ -71,28 +71,30 @@ def cusum_deforest(args):
     # unpack args
     data, dates, point_id, nr_bootstraps = args
     
-    stack_tf = tf.convert_to_tensor(np.nan_to_num(data), dtype='float32')
-    mask = tf.convert_to_tensor(np.isfinite(data).astype('float32'), dtype='float32')
+    if data:
+        stack_tf = tf.convert_to_tensor(np.nan_to_num(data), dtype='float32')
+        mask = tf.convert_to_tensor(np.isfinite(data).astype('float32'), dtype='float32')
 
-    # calculate mean
-    mean_tf = tf.math.divide_no_nan(tf.math.reduce_sum(stack_tf, axis=0), tf.math.reduce_sum(mask, axis=0))
+        # calculate mean
+        mean_tf = tf.math.divide_no_nan(tf.math.reduce_sum(stack_tf, axis=0), tf.math.reduce_sum(mask, axis=0))
 
-    # calculate residuals (broadcasting here)
-    residuals = tf.math.subtract(stack_tf, mean_tf)
+        # calculate residuals (broadcasting here)
+        residuals = tf.math.subtract(stack_tf, mean_tf)
 
-    # mask original nans of stack and treat them as zeros
-    residuals = tf.where(tf.math.equal(stack_tf, 0), tf.zeros_like(stack_tf), residuals)
+        # mask original nans of stack and treat them as zeros
+        residuals = tf.where(tf.math.equal(stack_tf, 0), tf.zeros_like(stack_tf), residuals)
 
-    # get original cumsum caluclation and dates
-    s_diff, argmax = cusum_calculation(residuals)
+        # get original cumsum caluclation and dates
+        s_diff, argmax = cusum_calculation(residuals)
 
-    # get dates into change array
-    date = np.array(dates)[argmax.numpy()]
-    magnitude = s_diff.numpy()
+        # get dates into change array
+        date = np.array(dates)[argmax.numpy()]
+        magnitude = s_diff.numpy()
 
-    # get confidence from bootstrap procedure
-    confidence = bootstrap(residuals, s_diff, nr_bootstraps).numpy()
-    
+        # get confidence from bootstrap procedure
+        confidence = bootstrap(residuals, s_diff, nr_bootstraps).numpy()
+    else:
+        date, confidence, magnitude = 0, 0, 0
     return date, confidence, magnitude, point_id
 
 
@@ -114,7 +116,7 @@ def run_cusum_deforest(df, cusum_params):
         try:
             d[i] = list(task.result())
         except ValueError:
-            print("task failed")
+            print("cusum task failed")
             
     cusum_df = pd.DataFrame.from_dict(d, orient='index')
     cusum_df.columns = ['cusum_change_date', 'cusum_confidence', 'cusum_magnitude', 'point_id']
