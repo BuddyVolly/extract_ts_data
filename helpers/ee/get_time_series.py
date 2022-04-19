@@ -48,7 +48,11 @@ def get_time_series(imageCollection, points, geometry, config_dict):
         raise r.raise_for_status()
     
     # write the FC to a geodataframe
-    point_gdf = gpd.GeoDataFrame.from_features(r.json())
+    try:
+        point_gdf = gpd.GeoDataFrame.from_features(r.json())
+    except: # JSONDecodeError:
+        return None, -1
+        
     if len(point_gdf) > 0:
         return structure_ts_data(point_gdf, point_id_name), nr_of_points
     else:

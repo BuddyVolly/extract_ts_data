@@ -47,10 +47,9 @@ def get_change_data(aoi, fc, config_dict):
         
         # get start time
         start_time = time.time()
-        
-        
+
         # get the timeseries data
-        df, nr_of_points = get_time_series(lsat, fc, cell, config_dict)
+        df, nr_of_points = get_time_series(lsat.select(config_dict['ts_params']['band']), fc, cell, config_dict)
         
         if nr_of_points > 0:
             print(f' Processing gridcell {idx}')
@@ -95,12 +94,15 @@ def get_change_data(aoi, fc, config_dict):
         
         if nr_of_points > 0:
             print(f' Grid cell {idx} with {nr_of_points} points done in: {timedelta(seconds=elapsed)}')    
-        else:
+        elif nr_of_points == 0:
             with open(outdir.joinpath(f'tmp_{idx}_noresult.txt'), 'w') as f:
                 f.write('0 points')
             print(f' Grid cell {idx} does not contain any points. Going on with next grid cell.')    
-        
-                       
+        elif nr_of_points == -1:
+            with open(outdir.joinpath(f'tmp_{idx}_noresult.txt'), 'w') as f:
+                f.write('0 points')  
+            print(f' No point data could been extracted from grid cell {idx}. Going on with next grid cell.')        
+    
     # create a grid
     grid, grid_fc = generate_grid(aoi, config_dict['ts_params']['grid_size'], config_dict['ts_params']['grid_size'])
     print(f' Parallelizing time-series extraction on {str(config_dict["workers"])} threads for a total of {len(grid)} grid cells.')
@@ -134,7 +136,7 @@ def get_change_data(aoi, fc, config_dict):
     
     # write to geo file
     gpd.GeoDataFrame(
-                df.drop(['dates', 'ts']), 
+                df.drop(['dates', 'ts'], axis=1), 
                 crs="EPSG:4326", 
                 geometry=df['geometry']
             ).to_file(
