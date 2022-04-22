@@ -114,3 +114,19 @@ def generate_grid(aoi, dx, dy, marginx=0, marginy=0):
     cells = xx.map(mapOverX).flatten()
    
     return ee.FeatureCollection(cells).filterBounds(aoi).aggregate_array('.geo').getInfo(), ee.FeatureCollection(cells).filterBounds(aoi)
+
+
+def getRandomPoint(feature):
+    feat = ee.Feature(feature)
+    return ee.Feature(ee.FeatureCollection.randomPoints(**{"region": feat.geometry(),"points": 1,"seed": 42,"maxError": 100}).first()).set('point_id', feat.id())
+
+
+def getCenterPoint(feature):
+    feat = ee.Feature(feature)
+    return feat.centroid(10).set('point_id', feat.id())
+
+def setId(feature):
+    return feature.set('point_id', feature.id())
+
+def rename_TMF(band):
+    return ee.String(band).replace("Dec", "tmf_",'g')

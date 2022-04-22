@@ -21,7 +21,7 @@ def get_change_data(aoi, fc, config_dict):
     
     outdir = Path(config_dict['work_dir'])
     outdir.mkdir(parents=True, exist_ok=True)
-    config_file = str(outdir.joinpath("config.json"))
+    config_file = str(outdir/"config.json")
     
     with open(config_file, "w") as f:
         json.dump(config_dict, f)
